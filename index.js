@@ -1,40 +1,32 @@
 const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const { Configuration, OpenAIApi } = require("openai");
+const OpenAI = require("openai");
+require("dotenv").config();
 
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
+const port = process.env.PORT || 3000;
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
+
+app.use(express.json());
 
 app.post("/chat", async (req, res) => {
+  const userMessage = req.body.message;
+
   try {
-    const { message } = req.body;
-    const completion = await openai.createChatCompletion({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a friendly and knowledgeable local concierge who specializes in everything related to Celebration, Florida. Answer questions helpfully and clearly, based on local knowledge.",
-        },
-        { role: "user", content: message },
-      ],
+    const chatCompletion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: userMessage }],
     });
 
-    res.json({ reply: completion.data.choices[0].message.content });
+    res.json({ reply: chatCompletion.choices[0].message.content });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Something went wrong");
+    res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
 });
